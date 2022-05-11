@@ -552,6 +552,17 @@ ColumnsDescription InterpreterCreateQuery::getColumnsDescription(
 
         column.name = col_decl.name;
 
+        /// ignore other database extensions if settings allow
+        if (col_decl.default_specifier == "AUTO_INCREMENT"
+            && !context_->getSettingsRef().compatibility_ignore_auto_increment_in_create_table)
+        {
+            throw Exception{
+                fmt::format(
+                    "AUTO_INCREMENT is not supported. To ignore it in column declaration set setting `{}` to true",
+                    context_->getSettingsRef().compatibility_ignore_auto_increment_in_create_table.toString()),
+                ErrorCodes::BAD_ARGUMENTS};
+        }
+
         if (col_decl.default_expression)
         {
             ASTPtr default_expr =
